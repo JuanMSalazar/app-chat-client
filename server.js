@@ -17,13 +17,10 @@ var Message = mongoose.model("Message", {
   message: String
 });
 
-var messages = [
-  { name: "Tim", message: "Hi" },
-  { name: "Jane", message: "Hello" }
-];
-
 app.get("/messages", (req, res) => {
-  res.send(messages);
+  Message.find({}, (err, messages) => {
+    res.send(messages);
+  });
 });
 
 app.post("/messages", (req, res) => {
@@ -33,7 +30,6 @@ app.post("/messages", (req, res) => {
     if (err) {
       sendStatus(500);
     } else {
-      messages.push(req.body);
       io.emit("message", req.body);
       res.sendStatus(200);
     }
