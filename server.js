@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 mongoose.Promise = Promise;
 
 var dbUrl =
-  "mongodb+srv://user:user@chat-client-eicu2.mongodb.net/test?retryWrites=true&w=majority";
+  "mongodb+srv://---:---@chat-client-eicu2.mongodb.net/test?retryWrites=true&w=majority";
 
 var Message = mongoose.model("Message", {
   name: String,
@@ -25,27 +25,29 @@ app.get("/messages", (req, res) => {
   });
 });
 
-app.post("/messages", (req, res) => {
-  var message = new Message(req.body);
+app.post("/messages", async (req, res) => {
+  try {
+    var message = new Message(req.body);
 
-  message
-    .save()
-    .then(() => {
-      console.log("saved");
-      return Message.findOne({ message: "badword" });
-    })
-    .then(censored => {
-      if (censored) {
-        console.log("censored words found", censored);
-        return Message.remove({ _id: censored.id });
-      }
+    var savedMessage = await message.save();
+
+    console.log("saved");
+
+    var censored = await Message.findOne({ message: "badword" });
+
+    if (censored) {
+      await Message.remove({ _id: censored.id });
+    } else {
       io.emit("message", req.body);
-      res.sendStatus(200);
-    })
-    .catch(err => {
-      sendStatus(500);
-      return console.error(err);
-    });
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    sendStatus(500);
+    return console.error(error);
+  } finally {
+    console.log("message post called");
+  }
 });
 
 io.on("connection", socket => {
